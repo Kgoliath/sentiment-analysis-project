@@ -16,10 +16,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 # -------------------------------
 # API TOKEN (ORIGINAL METHOD)
 # -------------------------------
-try:
-    API_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
-except:
-    API_TOKEN = "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"
+#try:
+    #API_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
+#except:
+    #API_TOKEN = "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"
 
 # -------------------------------
 # CONFIGURATION AND CONSTANTS
@@ -1527,4 +1527,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
