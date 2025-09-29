@@ -953,6 +953,31 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded"
     )
+     # --- TEMPORARY DEBUGGING ---
+    st.write("--- Start of Debugging Info ---")
+    st.write(f"Streamlit version: {st.__version__}")
+    
+    # Check if the secrets object exists and what keys it has
+    if "secrets" in st.runtime.get_instance()._config.to_dict():
+        st.write("Secrets object found. Keys available:")
+        st.write(st.secrets.keys())
+        
+        # Check if the specific key exists
+        if "HF_API_TOKEN" in st.secrets:
+            st.success("✅ HF_API_TOKEN key found in secrets.")
+            # Display a redacted version of the token to confirm it's not empty
+            token = st.secrets["HF_API_TOKEN"]
+            if token and isinstance(token, str):
+                st.write(f"Token value is present. Starts with: '{token[:5]}...' and ends with: '...{token[-4:]}'")
+            else:
+                st.warning("⚠️ HF_API_TOKEN exists, but its value is empty or not a string!")
+        else:
+            st.error("❌ HF_API_TOKEN key NOT found in secrets.")
+    else:
+        st.error("❌ No secrets object found in Streamlit config. Secrets may not have loaded correctly.")
+    
+    st.write("--- End of Debugging Info ---")
+    # --- END OF DEBUGGING ---
     
     # Initialize session state
     init_session_state()
@@ -1515,6 +1540,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
