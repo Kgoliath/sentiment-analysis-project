@@ -16,10 +16,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 # -------------------------------
 # API TOKEN (ORIGINAL METHOD)
 # -------------------------------
-try:
-    API_TOKEN = st.secrets["HF_API_TOKEN"]
-except:
-    API_TOKEN = "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"
+#try:
+    #API_TOKEN = st.secrets["HF_API_TOKEN"]
+#except:
+    #API_TOKEN = "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"
 
 # -------------------------------
 # CONFIGURATION AND CONSTANTS
@@ -522,9 +522,16 @@ class SentimentAnalyzer:
     """Main sentiment analysis class"""
     
     def __init__(self):
-        self.api_token = API_TOKEN  # Use the hardcoded token
+        # Get token directly from secrets (no hardcoded fallback in the class)
+        try:
+            self.api_token = st.secrets["HUGGINGFACE_TOKEN"]
+            self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        except:
+            # If no secret, use hardcoded as last resort
+            self.api_token = "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"
+            self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        
         self.api_url = Config.API_URL
-        self.headers = {"Authorization": f"Bearer {self.api_token}"}
     
     @st.cache_data(ttl=3600)  # Cache for 1 hour
     def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
@@ -540,6 +547,12 @@ class SentimentAnalyzer:
                     json=payload, 
                     timeout=60
                 )
+                
+                # If unauthorized, the token might be invalid
+                if response.status_code == 401:
+                    st.error("❌ Invalid API token. Please check your Hugging Face token.")
+                    return None
+                    
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:
@@ -1500,6 +1513,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
