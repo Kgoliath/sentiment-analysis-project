@@ -13,13 +13,7 @@ import os
 from typing import Optional, Tuple, Dict, Any, List
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-# -------------------------------
-# API TOKEN (ORIGINAL METHOD)
-# -------------------------------
-#try:
-    #API_TOKEN = st.secrets["HF_API_TOKEN"]
-#except:
-    #API_TOKEN = "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"
+
 
 # -------------------------------
 # CONFIGURATION AND CONSTANTS
@@ -522,16 +516,12 @@ class SentimentAnalyzer:
     """Main sentiment analysis class"""
     
     def __init__(self):
-        # Get token directly from secrets (no hardcoded fallback in the class)
-        try:
-            self.api_token = st.secrets["HF_API_TOKEN"]
-            self.headers = {"Authorization": f"Bearer {self.api_token}"}
-        except:
-            # If no secret, use hardcoded as last resort
-            self.api_token = "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"
-            self.headers = {"Authorization": f"Bearer {self.api_token}"}
-        
-        self.api_url = Config.API_URL
+    # Get token directly from secrets (no hardcoded fallback in the class)
+    try:
+        self.api_token = st.secrets["HF_API_TOKEN"]
+        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+   
+    self.api_url = Config.API_URL
     
     @st.cache_data(ttl=3600)  # Cache for 1 hour
     def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
@@ -1513,6 +1503,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
