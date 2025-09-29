@@ -516,42 +516,49 @@ class SentimentAnalyzer:
     """Main sentiment analysis class"""
     
     def __init__(self):
-    # Get token directly from secrets (no hardcoded fallback in the class)
-    try:
-        self.api_token = st.secrets["HF_API_TOKEN"]
-        self.headers = {"Authorization": f"Bearer {self.api_token}"}
-   
-    self.api_url = Config.API_URL
+        # Get token directly from secrets (no hardcoded fallback in the class)
+        try:
+            self.api_token = st.secrets["HF_API_TOKEN"]
+            self.headers = {"Authorization": f"Bearer {self.api_token}"}
+            # This line should also be inside the __init__ method
+            self.api_url = Config.API_URL 
+        except (KeyError, AttributeError):
+            # It's good practice to handle the case where the secret might not exist
+            st.error("❌ Hugging Face API token not found. Please set `HF_API_TOKEN` in your Streamlit secrets.")
+            self.api_token = None
+            self.headers = {}
+            self.api_url = Config.API_URL
+            self.api_url = Config.API_URL
     
-    @st.cache_data(ttl=3600)  # Cache for 1 hour
-    def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
-        """Query Hugging Face API with retry logic"""
-        max_retries = 3
-        base_delay = 2
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
+    """Query Hugging Face API with retry logic"""
+    max_retries = 3
+    base_delay = 2
         
-        for attempt in range(max_retries):
-            try:
-                response = requests.post(
-                    _self.api_url, 
-                    headers=_self.headers, 
-                    json=payload, 
-                    timeout=60
-                )
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                _self.api_url, 
+                headers=_self.headers, 
+                json=payload, 
+                timeout=60
+            )
                 
-                # If unauthorized, the token might be invalid
-                if response.status_code == 401:
-                    st.error("❌ Invalid API token. Please check your Hugging Face token.")
-                    return None
+            # If unauthorized, the token might be invalid
+            if response.status_code == 401:
+                st.error("❌ Invalid API token. Please check your Hugging Face token.")
+                return None
                     
-                response.raise_for_status()
-                return response.json()
-            except requests.exceptions.RequestException as e:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt)  # Exponential backoff
-                    time.sleep(delay)
-                else:
-                    st.error(f"❌ API request failed after {max_retries} attempts: {e}")
-                    return None
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)  # Exponential backoff
+                time.sleep(delay)
+            else:
+                st.error(f"❌ API request failed after {max_retries} attempts: {e}")
+                return None
     
     def analyze_text(self, text: str) -> Optional[Dict[str, Any]]:
         """Analyze sentiment of a single text"""
@@ -1503,6 +1510,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
