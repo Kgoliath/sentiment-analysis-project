@@ -17,7 +17,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 # API TOKEN (ORIGINAL METHOD)
 # -------------------------------
 try:
-    API_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
+    API_TOKEN = st.secrets["HF_API_TOKEN"]
 except:
     API_TOKEN = "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"
 
@@ -1500,6 +1500,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
