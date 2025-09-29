@@ -948,8 +948,8 @@ def main():
     """Main application function"""
     # Page configuration
     st.set_page_config(
-        page_title=Config.PAGE_TITLE, 
-        page_icon=Config.PAGE_ICON, 
+        page_title="Sentiment Analysis Dashboard", 
+        page_icon="📊", 
         layout="wide",
         initial_sidebar_state="expanded"
     )
@@ -1542,6 +1542,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
