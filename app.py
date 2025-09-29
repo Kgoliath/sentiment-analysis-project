@@ -519,29 +519,47 @@ def create_pdf_report(data_type: str, **kwargs) -> bytes:
 # SENTIMENT ANALYSIS CLASS
 # -------------------------------
 class SentimentAnalyzer:
-    """Main sentiment analysis class"""
+    """Main sentiment analysis class using public Hugging Face API"""
     
     def __init__(self):
-        self.api_token = API_TOKEN  # Use the hardcoded token
-        self.api_url = Config.API_URL
-        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.api_url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment"
     
     @st.cache_data(ttl=3600)  # Cache for 1 hour
     def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
-        """Query Hugging Face API with retry logic"""
+        """Query Hugging Face API with retry logic - NO TOKEN REQUIRED"""
         max_retries = 3
         base_delay = 2
         
         for attempt in range(max_retries):
             try:
-                response = requests.post(
-                    _self.api_url, 
-                    headers=_self.headers, 
-                    json=payload, 
-                    timeout=60
-                )
+                # Try without any headers first (public access)
+                response = requests.post(_self.api_url, json=payload, timeout=60)
+                
+                # If we get a 503 (model loading), wait and retry
+                if response.status_code == 503:
+                    estimated_time = response.json().get('estimated_time', 10)
+                    st.info(f"🔄 Model is loading, please wait {estimated_time} seconds...")
+                    time.sleep(min(estimated_time, 30))
+                    continue
+                
+                # If unauthorized, try with token as fallback (but don't require it)
+                if response.status_code in [401, 403]:
+                    try:
+                        # Try with token if available, but don't fail if not
+                        API_TOKEN = st.secrets.get("HUGGINGFACE_TOKEN", "")
+                        if API_TOKEN:
+                            headers = {"Authorization": f"Bearer {API_TOKEN}"}
+                            response = requests.post(_self.api_url, headers=headers, json=payload, timeout=60)
+                        else:
+                            # If no token, continue with public access
+                            continue
+                    except:
+                        # If token fails, continue with public access
+                        continue
+                
                 response.raise_for_status()
                 return response.json()
+                
             except requests.exceptions.RequestException as e:
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)  # Exponential backoff
@@ -549,6 +567,9 @@ class SentimentAnalyzer:
                 else:
                     st.error(f"❌ API request failed after {max_retries} attempts: {e}")
                     return None
+            except Exception as e:
+                st.error(f"❌ Unexpected error: {e}")
+                return None
     
     def analyze_text(self, text: str) -> Optional[Dict[str, Any]]:
         """Analyze sentiment of a single text"""
@@ -561,7 +582,11 @@ class SentimentAnalyzer:
             return None
             
         if isinstance(result, dict) and "error" in result:
-            st.warning(f"⚠️ API Error: {result.get('error', 'Unknown error')}")
+            error_msg = result.get('error', 'Unknown error')
+            if "loading" in error_msg.lower():
+                st.warning("🔄 Model is still loading, please try again in 30 seconds")
+            else:
+                st.warning(f"⚠️ API Error: {error_msg}")
             return None
         elif isinstance(result, list) and result:
             try:
@@ -578,7 +603,7 @@ class SentimentAnalyzer:
                         **{k: 0 for k in ['Negative', 'Neutral', 'Positive'] if k != sentiment_label}
                     }
                 }
-            except (KeyError, IndexError) as e:
+            except (KeyError, IndexError, TypeError) as e:
                 st.error(f"❌ Error parsing API response: {e}")
                 return None
         return None
@@ -630,6 +655,8 @@ class SentimentAnalyzer:
                 res = self.analyze_text(text)
                 if res:
                     results.append((text, res))
+                # Add small delay to avoid rate limiting
+                time.sleep(0.5)
             
             progress_bar.empty()
             status_text.empty()
@@ -1500,3 +1527,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
