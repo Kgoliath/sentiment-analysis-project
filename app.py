@@ -524,7 +524,7 @@ class SentimentAnalyzer:
     def __init__(self):
         # Get token directly from secrets (no hardcoded fallback in the class)
         try:
-            self.api_token = st.secrets["HUGGINGFACE_TOKEN"]
+            self.api_token = st.secrets["HF_API_TOKEN"]
             self.headers = {"Authorization": f"Bearer {self.api_token}"}
         except:
             # If no secret, use hardcoded as last resort
@@ -1513,6 +1513,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
