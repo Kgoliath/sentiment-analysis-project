@@ -528,7 +528,7 @@ class SentimentAnalyzer:
             self.headers = {"Authorization": f"Bearer {self.api_token}"}
         except:
             # If no secret, use hardcoded as last resort
-            self.api_token = "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"
+            self.api_token = "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"
             self.headers = {"Authorization": f"Bearer {self.api_token}"}
         
         self.api_url = Config.API_URL
@@ -1513,6 +1513,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
