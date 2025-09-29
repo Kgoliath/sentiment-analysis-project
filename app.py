@@ -508,7 +508,6 @@ def create_pdf_report(data_type: str, **kwargs) -> bytes:
     
     buffer.seek(0)
     return buffer.read()
-
 # -------------------------------
 # SENTIMENT ANALYSIS CLASS
 # -------------------------------
@@ -516,56 +515,64 @@ class SentimentAnalyzer:
     """Main sentiment analysis class"""
     
     def __init__(self):
-        # Get token directly from secrets (no hardcoded fallback in the class)
+        """Initialize the analyzer and set up API headers."""
+        self.api_url = Config.API_URL
         try:
+            # Get token directly from Streamlit secrets
             self.api_token = st.secrets["HF_API_TOKEN"]
-            self.headers = {"Authorization": f"Bearer {self.api_token}"}
-            # This line should also be inside the __init__ method
-            self.api_url = Config.API_URL 
-        except (KeyError, AttributeError):
-            # It's good practice to handle the case where the secret might not exist
+            if not self.api_token:
+                st.error("❌ Hugging Face API token is empty. Please check your Streamlit secrets.")
+                self.headers = {}
+            else:
+                self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        except KeyError:
+            # This handles the case where the secret is not set at all
             st.error("❌ Hugging Face API token not found. Please set `HF_API_TOKEN` in your Streamlit secrets.")
             self.api_token = None
             self.headers = {}
-            self.api_url = Config.API_URL
-            self.api_url = Config.API_URL
-    
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
-    """Query Hugging Face API with retry logic"""
-    max_retries = 3
-    base_delay = 2
-        
-    for attempt in range(max_retries):
-        try:
-            response = requests.post(
-                _self.api_url, 
-                headers=_self.headers, 
-                json=payload, 
-                timeout=60
-            )
-                
-            # If unauthorized, the token might be invalid
-            if response.status_code == 401:
-                st.error("❌ Invalid API token. Please check your Hugging Face token.")
-                return None
+
+    @st.cache_data(ttl=3600)
+    def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
+        """Query Hugging Face API with retry logic."""
+        # Check if headers are properly configured before making a request
+        if not _self.headers:
+            st.error("❌ Cannot query API. Authorization headers are not set.")
+            return None
+
+        max_retries = 3
+        base_delay = 2
+            
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    _self.api_url, 
+                    headers=_self.headers, 
+                    json=payload, 
+                    timeout=60
+                )
                     
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            if attempt < max_retries - 1:
-                delay = base_delay * (2 ** attempt)  # Exponential backoff
-                time.sleep(delay)
-            else:
-                st.error(f"❌ API request failed after {max_retries} attempts: {e}")
-                return None
-    
+                if response.status_code == 401:
+                    st.error("❌ Invalid API token. Please check your Hugging Face token in Streamlit secrets.")
+                    return None
+                        
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    st.error(f"❌ API request failed after {max_retries} attempts: {e}")
+                    return None
+        return None # Explicitly return None if all retries fail
+
     def analyze_text(self, text: str) -> Optional[Dict[str, Any]]:
-        """Analyze sentiment of a single text"""
+        """Analyze sentiment of a single text."""
         processed_text = preprocess_text(text)
         if not processed_text:
             return None
             
+        # Note the call here: self._query_huggingface(...)
         result = self._query_huggingface({"inputs": processed_text})
         if not result:
             return None
@@ -575,6 +582,7 @@ def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
             return None
         elif isinstance(result, list) and result:
             try:
+                # The result is a list containing a list of dictionaries
                 max_score = max(result[0], key=lambda x: x['score'])
                 sentiment_label = Config.LABEL_MAPPING[max_score['label']]
                 
@@ -588,13 +596,13 @@ def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
                         **{k: 0 for k in ['Negative', 'Neutral', 'Positive'] if k != sentiment_label}
                     }
                 }
-            except (KeyError, IndexError) as e:
-                st.error(f"❌ Error parsing API response: {e}")
+            except (KeyError, IndexError, TypeError) as e:
+                st.error(f"❌ Error parsing API response: {e}. Response was: {result}")
                 return None
         return None
     
     def analyze_file_with_progress(self, file) -> Tuple[Optional[Dict], Optional[pd.DataFrame], Optional[str]]:
-        """Analyze file with comprehensive error handling and progress tracking"""
+        """Analyze file with comprehensive error handling and progress tracking."""
         if file is None:
             return None, None, "No file provided"
         
@@ -628,7 +636,6 @@ def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
                 if not texts:
                     return None, None, "Text file is empty"
             
-            # Process texts with progress bar
             progress_bar = st.progress(0)
             status_text = st.empty()
             results = []
@@ -647,7 +654,6 @@ def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
             if not results:
                 return None, None, "No valid text to analyze"
             
-            # Calculate statistics
             sentiment_counts = {'Negative': 0, 'Neutral': 0, 'Positive': 0}
             total_conf = 0
             
@@ -658,7 +664,6 @@ def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
             dominant_sentiment = max(sentiment_counts, key=sentiment_counts.get)
             avg_conf = total_conf / len(results) if results else 0
             
-            # Create detailed results dataframe
             detailed_results = []
             for text, res in results:
                 detailed_results.append({
@@ -1510,6 +1515,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
