@@ -1,0 +1,26 @@
+text,label,predicted_label,confidence
+it works perfectly!,Positive,Positive,0.9460489749908447
+I would recommend it.,Positive,Positive,0.8631126880645752
+I’m impressed.,Positive,Positive,0.9492017030715942
+exceeded my expectations.,Positive,Neutral,0.44636082649230957
+it makes life easier.,Positive,Positive,0.9037459492683411
+well done.,Positive,Positive,0.7416049242019653
+very disappointed.,Negative,Negative,0.9013098478317261
+complete waste of money.,Negative,Negative,0.9454781413078308
+I would not recommend it.,Negative,Negative,0.8745018243789673
+very frustrating.,Negative,Negative,0.9276074171066284
+not worth the price.,Negative,Negative,0.6400145292282104
+not better.,Negative,Negative,0.8588250279426575
+very bad experience.,Negative,Negative,0.950764536857605
+nothing special.,Neutral,Neutral,0.6475192308425903
+no issues so far.,Neutral,Neutral,0.5846374034881592
+but not outstanding.,Neutral,Negative,0.7171543836593628
+not amazing.,Neutral,Negative,0.8877500891685486
+could improve.,Neutral,Positive,0.6451413035392761
+but lacks innovation.,Neutral,Negative,0.7077339887619019
+nothing more.,Neutral,Neutral,0.5485205054283142
+product was decent.,Neutral,Positive,0.6593559980392456
+but could use more detail.,Neutral,Neutral,0.7071146965026855
+but the texture was strange.,Neutral,Negative,0.4988071322441101
+others did not.,Neutral,Neutral,0.5869420766830444
+both positives and negatives.,Neutral,Neutral,0.6891792416572571
