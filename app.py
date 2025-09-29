@@ -953,7 +953,7 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded"
     )
-     def main():
+def main():
     """Main application function"""
     # Page configuration
     st.set_page_config(...)
@@ -1542,6 +1542,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
