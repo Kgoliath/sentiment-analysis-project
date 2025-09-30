@@ -13,7 +13,9 @@ import os
 from typing import Optional, Tuple, Dict, Any, List
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-
+# -------------------------------
+# API TOKEN (FROM SECRETS)
+# -------------------------------
 
 # -------------------------------
 # CONFIGURATION AND CONSTANTS
@@ -508,40 +510,36 @@ def create_pdf_report(data_type: str, **kwargs) -> bytes:
     
     buffer.seek(0)
     return buffer.read()
+
 # -------------------------------
 # SENTIMENT ANALYSIS CLASS
 # -------------------------------
 class SentimentAnalyzer:
     """Main sentiment analysis class"""
-    
+
     def __init__(self):
         """Initialize the analyzer and set up API headers."""
         self.api_url = Config.API_URL
         try:
             # Get token directly from Streamlit secrets
-            self.api_token = st.secrets["HF_API_TOKEN"]
+            self.api_token = st.secrets.get("HF_API_TOKEN") or os.getenv("HF_API_TOKEN")
             if not self.api_token:
-                st.error("❌ Hugging Face API token is empty. Please check your Streamlit secrets.")
+                st.error("❌ Hugging Face API token is empty. Please check your Streamlit secrets or environment variables.")
                 self.headers = {}
             else:
                 self.headers = {"Authorization": f"Bearer {self.api_token}"}
         except KeyError:
             # This handles the case where the secret is not set at all
-            st.error("❌ Hugging Face API token not found. Please set `HF_API_TOKEN` in your Streamlit secrets.")
+            st.error("❌ Hugging Face API token not found. Please set `HF_API_TOKEN` in your Streamlit secrets or environment variables.")
             self.api_token = None
             self.headers = {}
-
-    @st.cache_data(ttl=3600)
+    
+    @st.cache_data(ttl=3600)  # Cache for 1 hour
     def _query_huggingface(_self, payload: Dict[str, Any]) -> Optional[Dict]:
-        """Query Hugging Face API with retry logic."""
-        # Check if headers are properly configured before making a request
-        if not _self.headers:
-            st.error("❌ Cannot query API. Authorization headers are not set.")
-            return None
-
+        """Query Hugging Face API with retry logic"""
         max_retries = 3
         base_delay = 2
-            
+        
         for attempt in range(max_retries):
             try:
                 response = requests.post(
@@ -550,29 +548,22 @@ class SentimentAnalyzer:
                     json=payload, 
                     timeout=60
                 )
-                    
-                if response.status_code == 401:
-                    st.error("❌ Invalid API token. Please check your Hugging Face token in Streamlit secrets.")
-                    return None
-                        
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:
                 if attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt)
+                    delay = base_delay * (2 ** attempt)  # Exponential backoff
                     time.sleep(delay)
                 else:
                     st.error(f"❌ API request failed after {max_retries} attempts: {e}")
                     return None
-        return None # Explicitly return None if all retries fail
-
+    
     def analyze_text(self, text: str) -> Optional[Dict[str, Any]]:
-        """Analyze sentiment of a single text."""
+        """Analyze sentiment of a single text"""
         processed_text = preprocess_text(text)
         if not processed_text:
             return None
             
-        # Note the call here: self._query_huggingface(...)
         result = self._query_huggingface({"inputs": processed_text})
         if not result:
             return None
@@ -582,7 +573,6 @@ class SentimentAnalyzer:
             return None
         elif isinstance(result, list) and result:
             try:
-                # The result is a list containing a list of dictionaries
                 max_score = max(result[0], key=lambda x: x['score'])
                 sentiment_label = Config.LABEL_MAPPING[max_score['label']]
                 
@@ -596,13 +586,13 @@ class SentimentAnalyzer:
                         **{k: 0 for k in ['Negative', 'Neutral', 'Positive'] if k != sentiment_label}
                     }
                 }
-            except (KeyError, IndexError, TypeError) as e:
-                st.error(f"❌ Error parsing API response: {e}. Response was: {result}")
+            except (KeyError, IndexError) as e:
+                st.error(f"❌ Error parsing API response: {e}")
                 return None
         return None
     
     def analyze_file_with_progress(self, file) -> Tuple[Optional[Dict], Optional[pd.DataFrame], Optional[str]]:
-        """Analyze file with comprehensive error handling and progress tracking."""
+        """Analyze file with comprehensive error handling and progress tracking"""
         if file is None:
             return None, None, "No file provided"
         
@@ -636,6 +626,7 @@ class SentimentAnalyzer:
                 if not texts:
                     return None, None, "Text file is empty"
             
+            # Process texts with progress bar
             progress_bar = st.progress(0)
             status_text = st.empty()
             results = []
@@ -654,6 +645,7 @@ class SentimentAnalyzer:
             if not results:
                 return None, None, "No valid text to analyze"
             
+            # Calculate statistics
             sentiment_counts = {'Negative': 0, 'Neutral': 0, 'Positive': 0}
             total_conf = 0
             
@@ -664,6 +656,7 @@ class SentimentAnalyzer:
             dominant_sentiment = max(sentiment_counts, key=sentiment_counts.get)
             avg_conf = total_conf / len(results) if results else 0
             
+            # Create detailed results dataframe
             detailed_results = []
             for text, res in results:
                 detailed_results.append({
@@ -948,15 +941,11 @@ def main():
     """Main application function"""
     # Page configuration
     st.set_page_config(
-        page_title="Sentiment Analysis Dashboard", 
-        page_icon="📊", 
+        page_title="Sentiment Analysis Dashboard",
+        page_icon=Config.PAGE_ICON,
         layout="wide",
         initial_sidebar_state="expanded"
     )
-def main():
-    """Main application function"""
-    # Page configuration
-    st.set_page_config(...)
     
     # Initialize session state
     init_session_state()
@@ -1517,23 +1506,4 @@ def main():
                 st.info("🔄 Perform a comparative analysis to see visualizations.")
 
 if __name__ == "__main__":
-
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
