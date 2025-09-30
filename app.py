@@ -958,29 +958,6 @@ def main():
     # Page configuration
     st.set_page_config(...)
     
-    # --- NEW, SIMPLIFIED DEBUGGING ---
-    st.write("--- Start of Debugging Info ---")
-    
-    # The official way to check for a secret is to use `in` directly on st.secrets
-    if "HF_API_TOKEN" in st.secrets:
-        st.success("✅ 'HF_API_TOKEN' key found in st.secrets.")
-        
-        token = st.secrets["HF_API_TOKEN"]
-        
-        # Check if the token value is actually a non-empty string
-        if isinstance(token, str) and token:
-            st.write(f"Token value is present. Starts with: '{token[:5]}...' and ends with: '...{token[-4:]}'")
-        else:
-            st.error("❌ 'HF_API_TOKEN' was found, but its value is empty or not a string.")
-            st.write(f"Value is: {token} (Type: {type(token)})")
-    else:
-        st.error("❌ 'HF_API_TOKEN' key NOT found in st.secrets.")
-        st.write("Available keys in st.secrets:", list(st.secrets.keys()))
-
-    st.write("--- End of Debugging Info ---")
-    # --- END OF DEBUGGING ---
-
-    
     # Initialize session state
     init_session_state()
     
@@ -1542,6 +1519,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
