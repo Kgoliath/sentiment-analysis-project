@@ -1,9 +1,9 @@
 # Sentiment Analysis Dashboard
 
-## 📊 Project Overview
+## Project Overview
 An interactive sentiment analysis dashboard that classifies text into Positive, Negative, or Neutral sentiments using Hugging Face's RoBERTa model. Built for Week 5 Sprint 3 "AI in Action" project.
 
-## 🚀 Features
+## Features
 - **Multi-class Sentiment Analysis** (Positive/Negative/Neutral)
 - **File Upload Support** (CSV/TXT)
 - **Comparative Analysis** between texts/files
@@ -11,7 +11,7 @@ An interactive sentiment analysis dashboard that classifies text into Positive, 
 - **Export Results** (CSV, JSON, PDF)
 - **Batch Processing** with progress tracking
 
-## 🛠️ Installation
+## Installation
 
 ### Prerequisites
 - Python 3.8+
